@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import avatar, name %}
+{% block title %}Жалоба — {{ brand }}{% endblock %}
+{% block content %}
+<div class="page-title">{{ icon("flag", "i in") }} Жалоба на пользователя</div>
+<div class="card">
+  <div class="row mb">{{ avatar(target, 44) }}<div>{{ name(target) }}<div class="small muted">@{{ target.username }}</div></div></div>
+  {% if success %}<div class="alert success">Спасибо! Жалоба отправлена модераторам. Мы сообщим о результате в уведомлениях.</div><a href="/profile/{{ target.username }}" class="btn">Вернуться в профиль</a>
+  {% else %}
+  <form method="post" action="/report/{{ target.username }}" enctype="multipart/form-data">
+    <label class="field"><span>Причина</span><select name="reason" required>{% for r in ["Спам", "Оскорбления и травля", "Мошенничество", "Выдаёт себя за другого", "Неприемлемый контент", "Угрозы", "Другое"] %}<option>{{ r }}</option>{% endfor %}</select></label>
+    <label class="field"><span>Подробности</span><textarea name="text" maxlength="3000" placeholder="Опишите, что произошло"></textarea></label>
+    <label class="field"><span>Скриншоты (до 5)</span><input type="file" name="images" accept="image/*" multiple></label>
+    <button class="btn danger">Отправить жалобу</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

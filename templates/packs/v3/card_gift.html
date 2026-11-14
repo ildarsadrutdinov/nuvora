@@ -1,0 +1,9 @@
+{%- set mine = user and g.from_user_id == user.id -%}
+{%- set tag = ("Лимитка" ~ (" №" ~ num if num else "")) if kind == "limited" else ("Коллекция" if kind == "premium" else ("От создателя" if kind == "founder" else "")) -%}
+<a class="v3-card v3-gift k-{{ kind or 'regular' }}" href="/gifts/{{ to.username if to else '' }}">
+  <div class="v3-gift-top">{{ icon_svg("gift", "i in") }} {% if mine %}Вы подарили{% else %}Вам подарок{% endif %}{% if tag %}<span class="v3-gift-tag">{{ tag }}</span>{% endif %}</div>
+  <div class="v3-gift-pic"><img src="/static/gifts/{{ g.gift_code }}.svg" alt="{{ info[2] }}" width="112" height="112" loading="lazy"></div>
+  <b class="v3-gift-name">{{ info[2] }}</b>
+  {% if g.message %}<div class="v3-gift-msg">{{ g.message }}</div>{% endif %}
+  <div class="v3-gift-from">{% if mine %}для {{ dname(to) if to else "" }}{% else %}от {{ dname(sender) if sender else "" }}{% endif %}</div>
+</a>

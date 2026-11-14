@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import post_card, avatar, name %}{% from "partials/icons.html" import icon %}
+{% block title %}{{ post.author.name or post.author.username }}: «{{ (post.content or post.original_comment or "пост")[:60] }}» — {{ brand }}{% endblock %}
+{% block meta %}<meta property="og:type" content="article"><meta property="og:url" content="{{ site_url }}/post/{{ post.id }}"><meta property="og:site_name" content="{{ brand }}">
+<meta property="og:title" content="{{ post.author.name or post.author.username }} в {{ brand }}"><meta property="og:description" content="{{ (post.content or 'Фото и видео в ' ~ brand)[:200] }}"><meta name="description" content="{{ (post.content or '')[:160] }}">
+<meta property="og:image" content="{{ site_url }}{% if post.image and post.media_type == 'image' %}{{ post.image }}{% else %}/og/post/{{ post.id }}.png{% endif %}"><meta name="twitter:card" content="summary_large_image"><link rel="canonical" href="{{ site_url }}/post/{{ post.id }}">{% endblock %}
+{% macro comment_item(c, depth=0) %}
+<div class="row cmt-row{% if depth %} cmt-reply{% endif %}" id="comment-{{ c.id }}" style="align-items:flex-start;gap:10px;padding:10px 0;--d:{{ [depth, 3]|min }}">
+  {% if c.author %}<a href="/profile/{{ c.author.username }}">{{ avatar(c.author, 34 if not depth else 28) }}</a>{% endif %}
+  <div class="grow">
+    <div style="background:var(--input);border-radius:14px;padding:8px 12px;{% if c.is_pinned %}border:1.5px solid var(--brand);{% endif %}">
+      <div class="row small" style="gap:6px">{% if c.author %}{{ name(c.author) }}{% endif %}<span class="faint tiny">{{ c.created_at|ago }}{% if c.edited_at %} · изм.{% endif %}</span>{% if c.is_pinned %}<span class="tag-pill">{{ icon("pin", "i in") }} закреплён</span>{% endif %}{% if c.author and c.author.id == post.user_id %}<span class="pill-info">автор</span>{% endif %}</div>
+      {% set can_see_hidden = user and (user.id == post.user_id or user.id == c.user_id or can_mod) %}
+      {% if c.is_hidden and not can_see_hidden %}<div class="cmt-hidden small" style="margin-top:2px">Комментарий скрыт автором поста</div>
+      {% else %}<div style="margin-top:2px;overflow-wrap:anywhere" class="{% if c.is_hidden %}cmt-hidden{% endif %}" id="ctext-{{ c.id }}" data-raw="{{ c.content }}">{{ c.content|rich }}</div>{% endif %}
+    </div>
+    <div class="row tiny" style="gap:2px;margin-top:2px">
+      {% set nl = c.comment_likes|length %}
+      <button class="act like {% if c.id in liked_comments %}on{% endif %}" data-act="comment-like" data-id="{{ c.id }}" style="padding:3px 8px">{{ icon("heart") }}<span class="n">{{ nl if nl else "" }}</span></button>
+      {% if user and not post.comments_disabled %}<button class="act" data-act="reply" data-id="{{ c.id }}" data-user="{{ c.author.username if c.author else '' }}" style="padding:3px 8px">Ответить</button>{% endif %}
+      {% set more %}{% if user and user.id == post.user_id %}<button class="act" data-act="comment-pin" data-id="{{ c.id }}" data-post="{{ post.id }}" style="padding:3px 8px">{% if c.is_pinned %}Открепить{% else %}Закрепить{% endif %}</button>{% endif %}
+      {% if user and user.id == c.user_id %}<button class="act" data-act="comment-edit" data-id="{{ c.id }}" style="padding:3px 8px">Изменить</button>{% endif %}
+      {% if user and (user.id == post.user_id or can_mod) and user.id != c.user_id %}<button class="act" data-act="toggle" data-url="/comment/{{ c.id }}/hide" data-reload="1" data-msg="Готово" style="padding:3px 8px">{% if c.is_hidden %}Показать{% else %}Скрыть{% endif %}</button>{% endif %}
+      {% if user and user.id != c.user_id %}<button class="act" data-act="toggle" data-url="/comment/{{ c.id }}/report" data-msg="Жалоба отправлена модераторам" style="padding:3px 8px">Пожаловаться</button>{% endif %}
+      {% if user and (user.id == c.user_id or user.id == post.user_id or can_mod) %}<button class="act" data-act="comment-delete" data-id="{{ c.id }}" style="padding:3px 8px;color:var(--danger)">Удалить</button>{% endif %}{% endset %}
+      {% if more|trim %}<details class="cmt-more"><summary class="act" aria-label="Ещё действия">{{ icon("more", "i") }}</summary><div class="cmt-more-row">{{ more }}</div></details>{% endif %}
+      {% if children.get(c.id) %}<button class="thread-toggle" data-thread="{{ c.id }}">Свернуть ответы ({{ children.get(c.id)|length }})</button>{% endif %}
+    </div>
+  </div>
+</div>
+<div id="thread-{{ c.id }}">{% for child in children.get(c.id, []) %}{{ comment_item(child, depth + 1) }}{% endfor %}</div>
+{% endmacro %}
+{% block content %}
+<div class="page-head"><div class="row"><a href="javascript:history.back()" class="back-link">{{ icon("back") }}</a><span class="page-title" style="margin:0">Пост</span></div>
+<div class="row" style="gap:6px">{% if post.is_long %}<button class="btn ghost sm" onclick="document.body.classList.toggle('reader');this.lastChild.textContent=document.body.classList.contains('reader')?' Выйти из чтения':' Режим чтения'">{{ icon("book", "i in") }} Режим чтения</button>{% endif %}
+{% if user and user.id == post.user_id %}<a class="btn soft sm" href="/post/{{ post.id }}/stats">{{ icon("chart") }} Статистика</a>{% endif %}</div></div>
+{% if post.scheduled_at and post.scheduled_at > now %}<div class="alert info">{{ icon("alarm", "i in") }} Пост запланирован на {{ post.scheduled_at|lt }}. <form method="post" action="/post/{{ post.id }}/publish-now" style="display:inline"><button class="btn sm">Опубликовать сейчас</button></form></div>{% endif %}
+{% if shared_by %}<div class="card share-by row" style="gap:12px">{{ avatar(shared_by, 40) }}<div class="grow" style="min-width:0"><b>{{ shared_by.name or shared_by.username }}</b> поделился(ась) с вами этим постом
+  {% if not user %}<div class="small muted">Присоединяйтесь к {{ brand }} — {{ shared_by.name or shared_by.username }} сразу будет у вас в друзьях.</div>{% endif %}</div>
+  {% if not user %}<a class="btn sm" href="/register?ref={{ shared_by.username }}">Присоединиться</a>
+  {% elif not shared_following %}<button class="btn sm" data-share-follow="{{ shared_by.username }}">{{ icon("user-plus", "i in") }} В друзья</button>{% endif %}</div>{% endif %}
+{{ post_card(post, user, st, originals, repost_counts, can_mod, full=true) }}
+{%- set tid = post.repost_id if (post.is_repost and not post.original_comment and originals.get(post.repost_id)) else post.id %}
+{%- set tauthor = (originals.get(post.repost_id).author if tid != post.id else post.author) %}
+<div class="post-tools" style="padding:0 6px 8px">
+  <button type="button" class="btn ghost sm" data-tts="text-{{ tid }}"{% if user and tts_on() %} data-tts-url="/tts/post/{{ tid }}"{% endif %} title="Прочитать пост вслух">{{ icon("volume", "i in") }} Прослушать</button>
+  <button type="button" class="btn ghost sm" data-readsize="-" title="Мельче">A−</button>
+  <button type="button" class="btn ghost sm" data-readsize="+" title="Крупнее">A+</button>
+  <button type="button" class="btn ghost sm" data-quote-img="text-{{ tid }}" data-author="{{ (tauthor.name or tauthor.username) if tauthor else '' }}" title="Поделиться текстом как картинкой">{{ icon("image", "i in") }} Картинкой</button>
+  <button type="button" class="btn ghost sm" data-copytext="text-{{ tid }}">{{ icon("copy", "i in") }} Текст</button>
+  <button type="button" class="btn ghost sm hide-in-app" data-print>{{ icon("download", "i in") }} PDF</button>
+</div>
+{% for _s in pack_slot("post_page") %}{% include _s %}{% endfor %}
+<div class="row small muted" style="padding:0 6px 10px;gap:14px">
+  <span>{{ post.created_at|lt("%d.%m.%Y, %H:%M") }}</span>
+  <span>{{ icon("eye", "i in") }} {{ post.views or 0 }}</span>
+  {% if not (post.author.hide_likes or post.hide_likes) or (user and user.id == post.user_id) %}<button class="act" data-act="likers" data-id="{{ post.id }}" style="padding:2px 6px">Кому понравилось</button>{% endif %}
+</div>
+<div class="card" id="comments">
+  <div class="card-title" style="flex-wrap:wrap;row-gap:6px">{{ icon("chat", "i in") }} Комментарии · {{ comment_count }}
+    {% if comment_count > 1 %}<span class="row tiny" style="gap:4px;flex-wrap:wrap">{% for k, l in [("old","Сначала старые"),("new","Новые"),("top","Популярные")] %}<a href="?sort={{ k }}#comments" class="chip {% if sort == k %}active{% endif %}" style="margin:0;padding:3px 10px">{{ l }}</a>{% endfor %}</span>{% endif %}</div>
+  {% if post.comments_disabled %}<div class="alert info">Автор отключил комментарии</div>
+  {% elif user %}
+  <form id="comment-form" method="post" action="/post/{{ post.id }}/comment" data-ajax data-reload class="mb">
+    <input type="hidden" name="parent_id" value="">
+    <div id="reply-to" class="reply-bar hidden"><span id="reply-to-label" class="grow"></span><button type="button" class="icon-btn" onclick="this.form.parent_id.value='';this.parentElement.classList.add('hidden')">{{ icon("x", "i in") }}</button></div>
+    <div class="row">{{ avatar(user, 34) }}<input name="content" maxlength="2000" placeholder="Написать комментарий…" required data-suggest style="border-radius:999px"><button class="btn">{{ icon("send") }}</button></div>
+  </form>
+  {% else %}<div class="alert info"><a href="/login?next=/post/{{ post.id }}" style="font-weight:700">Войдите</a>, чтобы комментировать</div>{% endif %}
+  {% for c in roots %}{{ comment_item(c) }}{% else %}<div class="empty" style="padding:24px">Комментариев пока нет — начните обсуждение!</div>{% endfor %}
+</div>
+{% if similar %}
+<div class="card" id="similar"><div class="card-title">{{ icon("layers", "i in") }} Похожие посты</div>
+  <div class="similar-grid">{% for p in similar %}<a href="/post/{{ p.id }}" class="similar-item">
+    {% if p.image and p.media_type == "image" %}<img src="{{ p.image }}" alt="" loading="lazy">{% elif p.image and p.media_type == "video" %}<video src="{{ p.image }}#t=0.5" muted preload="metadata"></video>{% endif %}
+    <div class="si-text">{{ (p.content or p.original_comment or "Пост")[:110] }}</div>
+    <div class="row tiny faint" style="gap:6px;margin-top:auto">{{ avatar(p.author, 18) }}<span class="ellipsis">{{ dname(p.author) }}</span><span style="margin-left:auto">{{ icon("heart", "i in") }} {{ p.likes|length }}</span></div>
+  </a>{% endfor %}</div>
+</div>
+{% endif %}
+{% endblock %}

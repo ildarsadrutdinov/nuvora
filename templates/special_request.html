@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Заявки — {{ brand }}{% endblock %}
+{% block content %}
+<div class="page-title">{{ icon("inbox", "i in") }} Заявки администрации</div><div class="page-sub">Верификация, звезда автора, апелляция блокировки</div>
+{% if success %}<div class="alert success">Заявка отправлена! Ответ придёт в уведомления.</div>{% endif %}
+{% if error %}<div class="alert error">{{ error }}</div>{% endif %}
+<form class="card" method="post" action="/special-request">
+  <label class="field"><span>Тип заявки</span><select name="type">{% for k, v in types.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
+  <label class="field"><span>Почему вам это нужно</span><textarea name="reason" maxlength="2000" required></textarea></label>
+  <label class="field"><span>Ссылки (соцсети, сайт, СМИ)</span><input name="links" maxlength="500"></label>
+  <button class="btn">Отправить</button>
+</form>
+{% if mine %}<div class="card"><div class="card-title">Мои заявки</div>
+{% for r in mine %}<div class="row small" style="padding:8px 0;border-top:1px solid var(--border)"><span class="grow"><b>{{ types.get(r.type, r.type) }}</b> · {{ r.created_at|ago }}{% if r.admin_comment %}<br><span class="muted">{{ r.admin_comment }}</span>{% endif %}</span>
+<span class="tag-pill">{{ {"new":"на рассмотрении","approved":"одобрена","rejected":"отклонена"}.get(r.status, r.status) }}</span></div>{% endfor %}</div>{% endif %}
+{% endblock %}

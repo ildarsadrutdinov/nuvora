@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Поддержка — {{ brand }}{% endblock %}
+{% block content %}
+<div class="page-title">{{ icon("lifebuoy", "i in") }} Поддержка</div><div class="page-sub">Опишите проблему — команда {{ brand }} ответит в уведомлениях{% if not user %} или на email{% endif %}</div>
+{% if success %}<div class="alert success">Обращение отправлено! Мы ответим как можно скорее.</div>{% endif %}
+{% if error %}<div class="alert error">{{ error }}</div>{% endif %}
+<form class="card" method="post" action="/support">
+  {% if not user %}<label class="field"><span>Email для ответа</span><input type="email" name="email" required></label>{% endif %}
+  <label class="field"><span>Тема</span><select name="subject">{% for s in ["Не могу войти", "Ошибка на сайте", "Жалоба на пользователя", "Вопрос о " ~ brand_plus, "Предложение по улучшению", "Другое"] %}<option>{{ s }}</option>{% endfor %}</select></label>
+  <label class="field"><span>Сообщение</span><textarea name="message" maxlength="3000" required style="min-height:140px"></textarea></label>
+  {% if not user %}<label class="check"><input type="checkbox" name="consent" value="1" required><span class="small">Согласен(на) на обработку email и текста обращения для ответа на него — по <a href="/privacy">политике конфиденциальности</a></span></label>{% endif %}
+  <button class="btn">Отправить</button>
+</form>
+<div class="card"><div class="card-title">Частые вопросы</div>
+  <details class="mb"><summary><b>Как получить галочку верификации?</b></summary><p class="small muted mt">Подайте заявку на странице <a href="/special-request" style="color:var(--link)">«Заявки»</a>.</p></details>
+  <details class="mb"><summary><b>Как закрыть профиль?</b></summary><p class="small muted mt">Настройки → Приватность → «Закрытый профиль».</p></details>
+  <details class="mb"><summary><b>Как включить двухфакторную защиту?</b></summary><p class="small muted mt">Настройки → Безопасность. Понадобится приложение-аутентификатор.</p></details>
+  <details><summary><b>Забыл пароль</b></summary><p class="small muted mt">Воспользуйтесь <a href="/forgot" style="color:var(--link)">восстановлением пароля</a>.</p></details>
+</div>
+{% endblock %}

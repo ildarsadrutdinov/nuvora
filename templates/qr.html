@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import avatar, name %}
+{% block title %}QR-код @{{ profile_user.username }} — {{ brand }}{% endblock %}
+{% block content %}
+<div class="card center" style="padding:30px">
+  {{ avatar(profile_user, 72) }}
+  <div class="mt" style="font-size:20px;font-weight:800">{{ name(profile_user, link=false) }}</div>
+  <div class="muted mb">@{{ profile_user.username }}</div>
+  <div class="qr-box"><img id="qr" alt="QR" width="240" height="240" src="/qr-code/{{ profile_user.username }}.svg"></div>
+  <p class="small muted mt">Наведите камеру телефона, чтобы открыть профиль в {{ brand }}</p>
+  <div class="row mt" style="justify-content:center"><button class="btn" data-act="share" data-url="/profile/{{ profile_user.username }}">Поделиться ссылкой</button><a class="btn ghost" href="/profile/{{ profile_user.username }}">В профиль</a></div>
+</div>
+{% endblock %}

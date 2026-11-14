@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import avatar %}{% from "partials/icons.html" import icon %}
+{% block content %}
+{% if story_groups or user %}
+<div class="card stories-card" style="padding:12px 14px">
+  <div class="stories">
+    {% if user %}
+    <a href="/stories/create" class="story-item"><span class="story-add">{{ icon("plus") }}</span><span>{% if story_groups %}Ваша история{% else %}Добавить историю{% endif %}</span></a>
+    {% endif %}
+    {% for g in story_groups %}
+    <a href="/stories/{{ g.user.username }}" class="story-item">
+      <span class="ring {% if g.seen %}seen{% endif %}">{{ avatar(g.user, 58) }}</span>
+      <span>{% if user and g.user.id == user.id %}Вы{% else %}{{ g.user.name or g.user.username }}{% endif %}</span>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if not user %}
+<div class="card hero center" style="padding:34px 22px">
+  <img src="/static/brand/logo-180.png" alt="" style="width:64px;height:64px;border-radius:18px;margin-bottom:12px">
+  <h2 style="font-size:26px;font-weight:800;letter-spacing:-.6px">Добро пожаловать в {{ brand }}</h2>
+  <p class="muted" style="margin:6px 0 18px">{{ brand_tagline }}. Посты, истории, чаты и группы — в одном месте.</p>
+  <div class="row" style="justify-content:center"><a href="/register" class="btn">Создать аккаунт</a><a href="/login" class="btn ghost">Войти</a></div>
+</div>
+{% endif %}
+
+{% for _s in pack_slot("home_top") %}{% include _s %}{% endfor %}
+<div class="tabs">
+  {% if user %}<a href="/?tab=following" class="{% if tab == 'following' %}active{% endif %}">Подписки и подписчики</a>{% endif %}
+  <a href="/?tab=foryou" class="{% if tab == 'foryou' %}active{% endif %}">Рекомендации</a>
+</div>
+
+{% if posts %}
+  {% set more_url = "/feed/more?tab=" ~ tab ~ "&page=2" %}
+  {% include "partials/post_list.html" %}
+{% else %}
+<div class="card empty">
+  <div class="big">{% if tab == 'following' %}{{ icon("eye", "i in") }}{% else %}{{ icon("sparkle", "i in") }}{% endif %}</div>
+  {% if tab == 'following' %}Здесь посты ваших подписок и подписчиков. Подпишитесь на кого-нибудь, чтобы их стало больше. <a href="/explore" style="color:var(--link);font-weight:600">Найти людей →</a>
+  {% else %}Пока нет постов. {% if user %}<a href="/create" style="color:var(--link);font-weight:600">Напишите первый →</a>{% else %}Будьте первым!{% endif %}{% endif %}
+</div>
+{% endif %}
+{% endblock %}
